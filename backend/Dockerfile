@@ -19,8 +19,11 @@ WORKDIR /app
 # Copy the fat JAR from the builder stage
 COPY --from=builder /app/target/*.jar app.jar
 
-# Expose default port (the app will respect server.port property or env var)
-EXPOSE 8080
+# Expose default port used in dev profile
+EXPOSE 8090
 
-# Run the application
-ENTRYPOINT ["sh", "-c", "java -Dserver.port=${PORT:-8080} -jar /app/app.jar"]
+# Run the application. Use ${PORT} if provided by the platform (Render) otherwise
+# fall back to 8090 (matches `application-dev.properties`). Any `SPRING_*` env
+# variables will be read by Spring Boot automatically.
+ENV JAVA_OPTS="-Xms256m -Xmx512m"
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -Dserver.port=${PORT:-8090} -jar /app/app.jar"]
