@@ -2,7 +2,9 @@ package com.ecomarket.product;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.ecomarket.category.Category;
 import com.ecomarket.category.CategoryRepository;
@@ -25,11 +27,11 @@ public class ProductService {
     }
 
     public ProductResponse getById(Long id) {
-        return repository.findById(id).map(this::toDto).orElseThrow(() -> new RuntimeException("Product not found"));
+        return repository.findById(id).map(this::toDto).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
     }
 
     public ProductResponse create(ProductRequest req) {
-        Category cat = categoryRepository.findById(req.getCategoryId()).orElseThrow(() -> new RuntimeException("Category not found"));
+        Category cat = categoryRepository.findById(req.getCategoryId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Category not found"));
         Product p = new Product();
         p.setName(req.getName());
         p.setDescription(req.getDescription());
@@ -45,8 +47,8 @@ public class ProductService {
     }
 
     public ProductResponse update(Long id, ProductRequest req) {
-        Product p = repository.findById(id).orElseThrow(() -> new RuntimeException("Product not found"));
-        Category cat = categoryRepository.findById(req.getCategoryId()).orElseThrow(() -> new RuntimeException("Category not found"));
+        Product p = repository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
+        Category cat = categoryRepository.findById(req.getCategoryId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Category not found"));
         p.setName(req.getName());
         p.setDescription(req.getDescription());
         p.setPrice(req.getPrice());
@@ -61,7 +63,7 @@ public class ProductService {
     }
 
     public void delete(Long id) {
-        if (!repository.existsById(id)) throw new RuntimeException("Product not found");
+        if (!repository.existsById(id)) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found");
         repository.deleteById(id);
     }
 

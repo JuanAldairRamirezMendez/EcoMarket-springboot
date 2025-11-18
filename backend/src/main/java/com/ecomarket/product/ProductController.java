@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.ecomarket.product.dto.PagedProductResponse;
 import com.ecomarket.product.dto.ProductRequest;
 import com.ecomarket.product.dto.ProductResponse;
 
@@ -31,8 +32,18 @@ public class ProductController {
     }
 
     @GetMapping
-    public ResponseEntity<Page<ProductResponse>> list(Pageable pageable) {
-        return ResponseEntity.ok(service.list(pageable));
+    public ResponseEntity<PagedProductResponse> list(Pageable pageable) {
+        Page<ProductResponse> page = service.list(pageable);
+        PagedProductResponse response = new PagedProductResponse(
+            page.getContent(),
+            page.getNumber(),
+            page.getSize(),
+            page.getTotalElements(),
+            page.getTotalPages(),
+            page.isFirst(),
+            page.isLast()
+        );
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}")

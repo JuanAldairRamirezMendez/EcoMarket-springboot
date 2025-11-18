@@ -1,0 +1,13 @@
+# Ignored files for this project
+# Local env with secrets
+backend/env.list
+
+# Maven / build
+backend/target/
+*.class
+*.jar
+
+# IDE
+.idea/
+.vscode/
+*.iml
