@@ -1,6 +1,6 @@
 # Multi-stage Dockerfile for building and running the ecomarket backend
 # Stage 1: Builder (build + run tests)
-FROM maven:3.9.6-eclipse-temurin-17 AS builder
+FROM maven:3.9.6-eclipse-temurin-22 AS builder
 
 WORKDIR /app
 
@@ -12,7 +12,7 @@ COPY . .
 RUN mvn -B clean package
 
 # Stage 2: Runtime
-FROM eclipse-temurin:23-jre
+FROM eclipse-temurin:22-jre
 
 WORKDIR /app
 

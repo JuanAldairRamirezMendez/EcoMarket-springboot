@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DataSeeder.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">backend</a> &gt; <a href="index.source.html" class="el_package">com.ecomarket.config</a> &gt; <span class="el_source">DataSeeder.java</span></div><h1>DataSeeder.java</h1><pre class="source lang-java linenums">package com.ecomarket.config;
+
+import java.math.BigDecimal;
+import java.util.HashSet;
+import java.util.Set;
+
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Component;
+
+import com.ecomarket.auth.Role;
+import com.ecomarket.auth.RoleRepository;
+import com.ecomarket.auth.User;
+import com.ecomarket.auth.UserRepository;
+import com.ecomarket.category.Category;
+import com.ecomarket.category.CategoryRepository;
+import com.ecomarket.product.Product;
+import com.ecomarket.product.ProductRepository;
+
+@Component
+public class DataSeeder implements CommandLineRunner {
+
+    private final RoleRepository roleRepository;
+    private final UserRepository userRepository;
+    private final CategoryRepository categoryRepository;
+    private final ProductRepository productRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    public DataSeeder(RoleRepository roleRepository, UserRepository userRepository, 
+                     CategoryRepository categoryRepository, ProductRepository productRepository,
+<span class="fc" id="L31">                     PasswordEncoder passwordEncoder) {</span>
+<span class="fc" id="L32">        this.roleRepository = roleRepository;</span>
+<span class="fc" id="L33">        this.userRepository = userRepository;</span>
+<span class="fc" id="L34">        this.categoryRepository = categoryRepository;</span>
+<span class="fc" id="L35">        this.productRepository = productRepository;</span>
+<span class="fc" id="L36">        this.passwordEncoder = passwordEncoder;</span>
+<span class="fc" id="L37">    }</span>
+
+    @Override
+    public void run(String... args) throws Exception {
+        // Ensure roles exist
+<span class="fc" id="L42">        Role adminRole = roleRepository.findByName(&quot;ROLE_ADMIN&quot;).orElseGet(() -&gt; roleRepository.save(new Role(null, &quot;ROLE_ADMIN&quot;)));</span>
+<span class="fc" id="L43">        Role userRole = roleRepository.findByName(&quot;ROLE_USER&quot;).orElseGet(() -&gt; roleRepository.save(new Role(null, &quot;ROLE_USER&quot;)));</span>
+
+        // Create admin user if not exists
+<span class="fc" id="L46">        String adminUsername = &quot;admin&quot;;</span>
+<span class="pc bpc" id="L47" title="1 of 2 branches missed.">        if (!userRepository.existsByUsername(adminUsername)) {</span>
+<span class="fc" id="L48">            User admin = new User();</span>
+<span class="fc" id="L49">            admin.setUsername(adminUsername);</span>
+<span class="fc" id="L50">            admin.setEmail(&quot;admin@example.com&quot;);</span>
+<span class="fc" id="L51">            admin.setPassword(passwordEncoder.encode(&quot;AdminPass123&quot;));</span>
+<span class="fc" id="L52">            Set&lt;Role&gt; roles = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L53">            roles.add(adminRole);</span>
+<span class="fc" id="L54">            roles.add(userRole);</span>
+<span class="fc" id="L55">            admin.setRoles(roles);</span>
+<span class="fc" id="L56">            userRepository.save(admin);</span>
+<span class="fc" id="L57">            System.out.println(&quot;DataSeeder: created admin user 'admin' with password 'AdminPass123'&quot;);</span>
+        }
+
+        // Create regular user if not exists
+<span class="fc" id="L61">        String userUsername = &quot;user&quot;;</span>
+<span class="pc bpc" id="L62" title="1 of 2 branches missed.">        if (!userRepository.existsByUsername(userUsername)) {</span>
+<span class="fc" id="L63">            User user = new User();</span>
+<span class="fc" id="L64">            user.setUsername(userUsername);</span>
+<span class="fc" id="L65">            user.setEmail(&quot;user@example.com&quot;);</span>
+<span class="fc" id="L66">            user.setPassword(passwordEncoder.encode(&quot;UserPass123&quot;));</span>
+<span class="fc" id="L67">            Set&lt;Role&gt; roles = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L68">            roles.add(userRole);</span>
+<span class="fc" id="L69">            user.setRoles(roles);</span>
+<span class="fc" id="L70">            userRepository.save(user);</span>
+<span class="fc" id="L71">            System.out.println(&quot;DataSeeder: created regular user 'user' with password 'UserPass123'&quot;);</span>
+        }
+
+        // Create categories if not exist
+<span class="fc" id="L75">        Category furniture = categoryRepository.findByName(&quot;Muebles Ecológicos&quot;).orElseGet(() -&gt; {</span>
+<span class="fc" id="L76">            Category cat = new Category();</span>
+<span class="fc" id="L77">            cat.setName(&quot;Muebles Ecológicos&quot;);</span>
+<span class="fc" id="L78">            cat.setDescription(&quot;Muebles hechos con materiales reciclados y sostenibles&quot;);</span>
+<span class="fc" id="L79">            return categoryRepository.save(cat);</span>
+        });
+
+<span class="fc" id="L82">        Category accessories = categoryRepository.findByName(&quot;Accesorios Sostenibles&quot;).orElseGet(() -&gt; {</span>
+<span class="fc" id="L83">            Category cat = new Category();</span>
+<span class="fc" id="L84">            cat.setName(&quot;Accesorios Sostenibles&quot;);</span>
+<span class="fc" id="L85">            cat.setDescription(&quot;Accesorios y complementos ecológicos&quot;);</span>
+<span class="fc" id="L86">            return categoryRepository.save(cat);</span>
+        });
+
+<span class="fc" id="L89">        Category home = categoryRepository.findByName(&quot;Hogar Eco-Friendly&quot;).orElseGet(() -&gt; {</span>
+<span class="fc" id="L90">            Category cat = new Category();</span>
+<span class="fc" id="L91">            cat.setName(&quot;Hogar Eco-Friendly&quot;);</span>
+<span class="fc" id="L92">            cat.setDescription(&quot;Artículos para el hogar hechos con materiales sostenibles&quot;);</span>
+<span class="fc" id="L93">            return categoryRepository.save(cat);</span>
+        });
+
+        // Create products if not exist
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">        if (productRepository.count() == 0) {</span>
+<span class="fc" id="L98">            Product ecoBackpack = new Product();</span>
+<span class="fc" id="L99">            ecoBackpack.setName(&quot;Mochila Reciclada EcoTravel&quot;);</span>
+<span class="fc" id="L100">            ecoBackpack.setDescription(&quot;Mochila resistente hecha 100% de botellas plásticas recicladas. Incluye compartimento para laptop y bolsillos organizadores.&quot;);</span>
+<span class="fc" id="L101">            ecoBackpack.setPrice(new BigDecimal(&quot;45.99&quot;));</span>
+<span class="fc" id="L102">            ecoBackpack.setStock(35);</span>
+<span class="fc" id="L103">            ecoBackpack.setCategory(accessories);</span>
+<span class="fc" id="L104">            ecoBackpack.setImageFilename(&quot;mochila-reciclada.jpg&quot;);</span>
+<span class="fc" id="L105">            ecoBackpack.setIsOrganic(false);</span>
+<span class="fc" id="L106">            ecoBackpack.setCertifications(&quot;Global Recycled Standard (GRS)&quot;);</span>
+<span class="fc" id="L107">            ecoBackpack.setOriginCountry(&quot;Vietnam&quot;);</span>
+<span class="fc" id="L108">            productRepository.save(ecoBackpack);</span>
+
+<span class="fc" id="L110">            Product recycledTable = new Product();</span>
+<span class="fc" id="L111">            recycledTable.setName(&quot;Mesa de Madera Recuperada&quot;);</span>
+<span class="fc" id="L112">            recycledTable.setDescription(&quot;Mesa artesanal hecha de madera recuperada de pallets. Acabado natural con sellador ecológico. Perfecta para comedor o escritorio.&quot;);</span>
+<span class="fc" id="L113">            recycledTable.setPrice(new BigDecimal(&quot;189.99&quot;));</span>
+<span class="fc" id="L114">            recycledTable.setStock(12);</span>
+<span class="fc" id="L115">            recycledTable.setCategory(furniture);</span>
+<span class="fc" id="L116">            recycledTable.setImageFilename(&quot;mesa-madera-recuperada.jpg&quot;);</span>
+<span class="fc" id="L117">            recycledTable.setIsOrganic(false);</span>
+<span class="fc" id="L118">            recycledTable.setCertifications(&quot;FSC Recycled&quot;);</span>
+<span class="fc" id="L119">            recycledTable.setOriginCountry(&quot;México&quot;);</span>
+<span class="fc" id="L120">            productRepository.save(recycledTable);</span>
+
+<span class="fc" id="L122">            Product ecoBag = new Product();</span>
+<span class="fc" id="L123">            ecoBag.setName(&quot;Bolsa Reutilizable de Algodón Orgánico&quot;);</span>
+<span class="fc" id="L124">            ecoBag.setDescription(&quot;Set de 3 bolsas de compras hechas de algodón 100% orgánico. Lavables, resistentes y perfectas para el supermercado.&quot;);</span>
+<span class="fc" id="L125">            ecoBag.setPrice(new BigDecimal(&quot;18.50&quot;));</span>
+<span class="fc" id="L126">            ecoBag.setStock(120);</span>
+<span class="fc" id="L127">            ecoBag.setCategory(accessories);</span>
+<span class="fc" id="L128">            ecoBag.setImageFilename(&quot;bolsa-algodon-organico.jpg&quot;);</span>
+<span class="fc" id="L129">            ecoBag.setIsOrganic(true);</span>
+<span class="fc" id="L130">            ecoBag.setCertifications(&quot;GOTS (Global Organic Textile Standard)&quot;);</span>
+<span class="fc" id="L131">            ecoBag.setOriginCountry(&quot;India&quot;);</span>
+<span class="fc" id="L132">            productRepository.save(ecoBag);</span>
+
+<span class="fc" id="L134">            Product recycledChair = new Product();</span>
+<span class="fc" id="L135">            recycledChair.setName(&quot;Silla de Plástico Reciclado Ocean&quot;);</span>
+<span class="fc" id="L136">            recycledChair.setDescription(&quot;Silla moderna hecha de plástico recuperado del océano. Diseño ergonómico, resistente para uso interior y exterior.&quot;);</span>
+<span class="fc" id="L137">            recycledChair.setPrice(new BigDecimal(&quot;95.00&quot;));</span>
+<span class="fc" id="L138">            recycledChair.setStock(28);</span>
+<span class="fc" id="L139">            recycledChair.setCategory(furniture);</span>
+<span class="fc" id="L140">            recycledChair.setImageFilename(&quot;silla-plastico-oceano.jpg&quot;);</span>
+<span class="fc" id="L141">            recycledChair.setIsOrganic(false);</span>
+<span class="fc" id="L142">            recycledChair.setCertifications(&quot;Ocean Plastic Certified&quot;);</span>
+<span class="fc" id="L143">            recycledChair.setOriginCountry(&quot;Portugal&quot;);</span>
+<span class="fc" id="L144">            productRepository.save(recycledChair);</span>
+
+<span class="fc" id="L146">            Product bambooCutlery = new Product();</span>
+<span class="fc" id="L147">            bambooCutlery.setName(&quot;Set de Cubiertos de Bambú&quot;);</span>
+<span class="fc" id="L148">            bambooCutlery.setDescription(&quot;Set portátil de cubiertos reutilizables hechos de bambú sostenible. Incluye tenedor, cuchillo, cuchara, pajita y estuche.&quot;);</span>
+<span class="fc" id="L149">            bambooCutlery.setPrice(new BigDecimal(&quot;12.99&quot;));</span>
+<span class="fc" id="L150">            bambooCutlery.setStock(85);</span>
+<span class="fc" id="L151">            bambooCutlery.setCategory(home);</span>
+<span class="fc" id="L152">            bambooCutlery.setImageFilename(&quot;cubiertos-bambu.jpg&quot;);</span>
+<span class="fc" id="L153">            bambooCutlery.setIsOrganic(false);</span>
+<span class="fc" id="L154">            bambooCutlery.setCertifications(&quot;FSC Bamboo&quot;);</span>
+<span class="fc" id="L155">            bambooCutlery.setOriginCountry(&quot;China&quot;);</span>
+<span class="fc" id="L156">            productRepository.save(bambooCutlery);</span>
+
+<span class="fc" id="L158">            Product recycledLamp = new Product();</span>
+<span class="fc" id="L159">            recycledLamp.setName(&quot;Lámpara de Cartón Reciclado&quot;);</span>
+<span class="fc" id="L160">            recycledLamp.setDescription(&quot;Lámpara de mesa con diseño minimalista hecha de cartón 100% reciclado. Iluminación LED de bajo consumo incluida.&quot;);</span>
+<span class="fc" id="L161">            recycledLamp.setPrice(new BigDecimal(&quot;34.99&quot;));</span>
+<span class="fc" id="L162">            recycledLamp.setStock(42);</span>
+<span class="fc" id="L163">            recycledLamp.setCategory(home);</span>
+<span class="fc" id="L164">            recycledLamp.setImageFilename(&quot;lampara-carton.jpg&quot;);</span>
+<span class="fc" id="L165">            recycledLamp.setIsOrganic(false);</span>
+<span class="fc" id="L166">            recycledLamp.setCertifications(&quot;Energy Star LED&quot;);</span>
+<span class="fc" id="L167">            recycledLamp.setOriginCountry(&quot;España&quot;);</span>
+<span class="fc" id="L168">            productRepository.save(recycledLamp);</span>
+
+<span class="fc" id="L170">            Product ecoYogaMat = new Product();</span>
+<span class="fc" id="L171">            ecoYogaMat.setName(&quot;Tapete de Yoga Cork Natural&quot;);</span>
+<span class="fc" id="L172">            ecoYogaMat.setDescription(&quot;Tapete de yoga hecho de corcho natural y caucho reciclado. Antideslizante, biodegradable y libre de químicos tóxicos.&quot;);</span>
+<span class="fc" id="L173">            ecoYogaMat.setPrice(new BigDecimal(&quot;68.00&quot;));</span>
+<span class="fc" id="L174">            ecoYogaMat.setStock(50);</span>
+<span class="fc" id="L175">            ecoYogaMat.setCategory(accessories);</span>
+<span class="fc" id="L176">            ecoYogaMat.setImageFilename(&quot;tapete-yoga-cork.jpg&quot;);</span>
+<span class="fc" id="L177">            ecoYogaMat.setIsOrganic(false);</span>
+<span class="fc" id="L178">            ecoYogaMat.setCertifications(&quot;Non-Toxic Certified&quot;);</span>
+<span class="fc" id="L179">            ecoYogaMat.setOriginCountry(&quot;Portugal&quot;);</span>
+<span class="fc" id="L180">            productRepository.save(ecoYogaMat);</span>
+
+<span class="fc" id="L182">            Product recycledBookshelf = new Product();</span>
+<span class="fc" id="L183">            recycledBookshelf.setName(&quot;Estante Modular de Metal Reciclado&quot;);</span>
+<span class="fc" id="L184">            recycledBookshelf.setDescription(&quot;Estante industrial de 5 niveles hecho de metal 100% reciclado y madera recuperada. Fácil de ensamblar.&quot;);</span>
+<span class="fc" id="L185">            recycledBookshelf.setPrice(new BigDecimal(&quot;156.00&quot;));</span>
+<span class="fc" id="L186">            recycledBookshelf.setStock(18);</span>
+<span class="fc" id="L187">            recycledBookshelf.setCategory(furniture);</span>
+<span class="fc" id="L188">            recycledBookshelf.setImageFilename(&quot;estante-metal-reciclado.jpg&quot;);</span>
+<span class="fc" id="L189">            recycledBookshelf.setIsOrganic(false);</span>
+<span class="fc" id="L190">            recycledBookshelf.setCertifications(&quot;Recycled Steel Certified&quot;);</span>
+<span class="fc" id="L191">            recycledBookshelf.setOriginCountry(&quot;México&quot;);</span>
+<span class="fc" id="L192">            productRepository.save(recycledBookshelf);</span>
+
+<span class="fc" id="L194">            System.out.println(&quot;DataSeeder: created sample categories and products&quot;);</span>
+        }
+<span class="fc" id="L196">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>
