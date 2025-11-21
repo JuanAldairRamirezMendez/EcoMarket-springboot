@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { BehaviorSubject, Observable, of, catchError, map } from 'rxjs';
 import { Product } from '../models/product.model';
+import { environment } from '../../environments/environment';
 
 interface ProductResponse {
   id: number;
@@ -25,7 +26,7 @@ interface ProductResponse {
   providedIn: 'root'
 })
 export class ProductsService {
-  private readonly API_URL = 'http://localhost:8090/ecomarket/api/products';
+  private readonly API_URL = `${environment.apiUrl}/products`;
   private products: Product[] = [];
   private productsSubject = new BehaviorSubject<Product[]>(this.products);
   public products$ = this.productsSubject.asObservable();
@@ -109,7 +110,7 @@ export class ProductsService {
 
   private mapToProduct(response: ProductResponse): Product {
     const imageUrl = response.imageUrl || (response.imageFilename
-      ? `http://localhost:8090/ecomarket/api/images/${response.imageFilename}`
+      ? `${environment.apiUrl}/images/${response.imageFilename}`
       : 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&h=300&fit=crop');
 
     return {

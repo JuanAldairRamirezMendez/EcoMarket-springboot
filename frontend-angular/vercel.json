@@ -1,0 +1,15 @@
+{
+  "buildCommand": "npm run build:spa",
+  "outputDirectory": "dist/frontend-angular/browser",
+  "framework": "angular",
+  "installCommand": "npm install",
+  "env": {
+    "API_URL": "https://your-backend-api-url.com/ecomarket/api"
+  },
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
