@@ -84,7 +84,7 @@ export class AdminProductFormComponent implements OnInit, OnDestroy {
     this.productsService.getProductById(id)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (product: Product | undefined) => {
+        next: (product: Product) => {
           if (product) {
             this.populateForm(product);
           } else {
@@ -116,7 +116,7 @@ export class AdminProductFormComponent implements OnInit, OnDestroy {
     // Populate tags
     const tagsFormArray = this.productForm.get('tags') as FormArray;
     tagsFormArray.clear();
-    (product.tags || []).forEach(tag => {
+    product.tags.forEach(tag => {
       tagsFormArray.push(this.fb.control(tag));
     });
 

@@ -8,16 +8,16 @@ export interface Product {
   categoryName: string;
   imageFilename: string | null;
   imageUrl: string | null;
-  isOrganic: boolean;
+  isOrganic: boolean | null;
   certifications: string | null;
   originCountry: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-  // Additional frontend fields (ensure defined for template bindings)
-  category: string;
-  inStock: boolean;
-  ecoRating: number;
-  sustainabilityScore: number;
-  carbonFootprint: number;
-  tags: string[];
+  createdAt: string | Date;
+  updatedAt: string | Date;
+  // Additional fields used across components
+  category?: string; // alias for categoryName
+  inStock?: boolean; // alias for stock > 0
+  ecoRating?: number;
+  sustainabilityScore?: number;
+  carbonFootprint?: number;
+  tags?: string[];
 }

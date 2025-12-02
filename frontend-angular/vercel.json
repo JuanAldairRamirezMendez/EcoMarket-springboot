@@ -1,16 +1,10 @@
 {
-  "buildCommand": "npm run build:spa",
-  "outputDirectory": "dist/frontend-angular/browser/browser",
-  "framework": "angular",
-  "installCommand": "npm install --legacy-peer-deps",
-  "env": {
-    "PUPPETEER_SKIP_DOWNLOAD": "true",
-    "API_URL": "https://your-backend-api-url.com/ecomarket/api"
-  },
-  "rewrites": [
+  "builds": [
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "dist/frontend-angular" }
     }
-  ]
+  ],
+  "routes": []
 }

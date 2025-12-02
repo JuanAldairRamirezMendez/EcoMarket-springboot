@@ -1,4 +1,5 @@
 export const environment = {
   production: false,
-  apiUrl: 'http://localhost:8090/ecomarket/api'
+  // Development backend (local). Override in production via environment.prod.ts or Vercel env vars.
+  apiUrl: 'http://localhost:8080/ecomarket/api'
 };

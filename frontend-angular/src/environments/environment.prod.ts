@@ -1,5 +1,6 @@
 export const environment = {
   production: true,
-  // API calls will go to the same domain since nginx proxies them
-  apiUrl: '/ecomarket/api'
+  // Para Docker local: usa el servicio backend
+  // Para AWS: reemplaza con tu ALB o API Gateway URL
+  apiUrl: 'http://backend:8080/ecomarket/api'
 };
