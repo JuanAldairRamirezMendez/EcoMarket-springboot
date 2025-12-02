@@ -3,93 +3,82 @@ name: Compilar y Desplegar Backend (ECS vía OIDC)
 on:
   push:
     branches: [ main ]
+  workflow_dispatch: {}
 
 permissions:
   contents: read
   id-token: write
 
 env:
-  name: Compilar y Desplegar Backend (ECS vía OIDC)
+  IMAGE_TAG: ${{ github.sha }}
 
-  on:
-    push:
-      branches: [ main ]
-    workflow_dispatch: {}
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
 
-  permissions:
-    contents: read
-    id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-  env:
-    IMAGE_TAG: ${{ github.sha }}
+      - name: Configurar JDK 22
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '22'
 
-  jobs:
-    build-and-deploy:
-      runs-on: ubuntu-latest
+      - name: Compilar con Maven
+        run: |
+          cd backend-v2
+          mvn -B clean package -DskipTests
 
-      steps:
-        - name: Checkout
-          uses: actions/checkout@v4
+      - name: Configurar credenciales de AWS (OIDC)
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
-        - name: Configurar JDK 22
-          uses: actions/setup-java@v4
-          with:
-            distribution: temurin
-            java-version: '22'
+      - name: Login en Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v1
 
-        - name: Compilar con Maven
-          run: |
-            cd backend-v2
-            mvn -B clean package -DskipTests
+      - name: Construir, etiquetar y enviar imagen Docker a ECR
+        env:
+          ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+          IMAGE_TAG: ${{ env.IMAGE_TAG }}
+        run: |
+          cd backend-v2
+          IMAGE_URI="$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+          docker build -t $IMAGE_URI .
+          docker push $IMAGE_URI
+          echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
 
-        - name: Configurar credenciales de AWS (OIDC)
-          uses: aws-actions/configure-aws-credentials@v2
-          with:
-            role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-            aws-region: ${{ secrets.AWS_REGION }}
+      - name: Instalar jq
+        run: sudo apt-get update && sudo apt-get install -y jq
 
-        - name: Login en Amazon ECR
-          uses: aws-actions/amazon-ecr-login@v1
+      - name: Desplegar en ECS (registrar nueva definición de tarea y actualizar servicio)
+        env:
+          CLUSTER_NAME: ${{ secrets.ECS_CLUSTER }}
+          SERVICE_NAME: ${{ secrets.ECS_SERVICE }}
+        run: |
+          set -e
 
-        - name: Construir, etiquetar y enviar imagen Docker a ECR
-          env:
-            ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
-            ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
-            IMAGE_TAG: ${{ env.IMAGE_TAG }}
-          run: |
-            cd backend-v2
-            IMAGE_URI="$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
-            docker build -t $IMAGE_URI .
-            docker push $IMAGE_URI
-            echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
+          # IMAGE_URI viene de $GITHUB_ENV escrito en el paso anterior
+          echo "Usando IMAGE_URI=$IMAGE_URI"
 
-        - name: Instalar jq
-          run: sudo apt-get update && sudo apt-get install -y jq
+          # Obtener la definición de tarea actual para el servicio
+          CURRENT_TASK_DEF_ARN=$(aws ecs describe-services --cluster "$CLUSTER_NAME" --services "$SERVICE_NAME" --query 'services[0].taskDefinition' --output text)
+          echo "Definición de tarea actual: $CURRENT_TASK_DEF_ARN"
 
-        - name: Desplegar en ECS (registrar nueva definición de tarea y actualizar servicio)
-          env:
-            CLUSTER_NAME: ${{ secrets.ECS_CLUSTER }}
-            SERVICE_NAME: ${{ secrets.ECS_SERVICE }}
-          run: |
-            set -e
+          aws ecs describe-task-definition --task-definition "$CURRENT_TASK_DEF_ARN" > taskdef.json
 
-            # IMAGE_URI viene de $GITHUB_ENV escrito en el paso anterior
-            echo "Usando IMAGE_URI=$IMAGE_URI"
+          # Construir nueva definición de tarea reemplazando la imagen (asume un contenedor en index 0)
+          jq --arg IMAGE "$IMAGE_URI" '.taskDefinition | .containerDefinitions[0].image = $IMAGE | {family: .family, networkMode: .networkMode, requiresCompatibilities: .requiresCompatibilities, cpu: .cpu, memory: .memory, executionRoleArn: .executionRoleArn, taskRoleArn: .taskRoleArn, containerDefinitions: .containerDefinitions, volumes: .volumes}' taskdef.json > new-task-def.json
 
-            # Obtener la definición de tarea actual para el servicio
-            CURRENT_TASK_DEF_ARN=$(aws ecs describe-services --cluster "$CLUSTER_NAME" --services "$SERVICE_NAME" --query 'services[0].taskDefinition' --output text)
-            echo "Definición de tarea actual: $CURRENT_TASK_DEF_ARN"
+          # Registrar nueva definición de tarea
+          NEW_TASK_DEF=$(aws ecs register-task-definition --cli-input-json file://new-task-def.json)
+          NEW_TASK_DEF_ARN=$(echo "$NEW_TASK_DEF" | jq -r '.taskDefinition.taskDefinitionArn')
+          echo "Definición de tarea registrada: $NEW_TASK_DEF_ARN"
 
-            aws ecs describe-task-definition --task-definition "$CURRENT_TASK_DEF_ARN" > taskdef.json
-
-            # Construir nueva definición de tarea reemplazando la imagen (asume un contenedor en index 0)
-            jq --arg IMAGE "$IMAGE_URI" '.taskDefinition | .containerDefinitions[0].image = $IMAGE | {family: .family, networkMode: .networkMode, requiresCompatibilities: .requiresCompatibilities, cpu: .cpu, memory: .memory, executionRoleArn: .executionRoleArn, taskRoleArn: .taskRoleArn, containerDefinitions: .containerDefinitions, volumes: .volumes}' taskdef.json > new-task-def.json
-
-            # Registrar nueva definición de tarea
-            NEW_TASK_DEF=$(aws ecs register-task-definition --cli-input-json file://new-task-def.json)
-            NEW_TASK_DEF_ARN=$(echo "$NEW_TASK_DEF" | jq -r '.taskDefinition.taskDefinitionArn')
-            echo "Definición de tarea registrada: $NEW_TASK_DEF_ARN"
-
-            # Actualizar el servicio para usar la nueva definición
-            aws ecs update-service --cluster "$CLUSTER_NAME" --service "$SERVICE_NAME" --task-definition "$NEW_TASK_DEF_ARN"
-            echo "Solicitud de actualización del servicio enviada. Monitorea el despliegue en la consola de AWS o con 'aws ecs describe-services'."
+          # Actualizar el servicio para usar la nueva definición
+          aws ecs update-service --cluster "$CLUSTER_NAME" --service "$SERVICE_NAME" --task-definition "$NEW_TASK_DEF_ARN"
+          echo "Solicitud de actualización del servicio enviada. Monitorea el despliegue en la consola de AWS o con 'aws ecs describe-services'."
